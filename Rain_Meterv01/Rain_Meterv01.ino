@@ -1,20 +1,20 @@
 #include <timer.h> //info at https://github.com/contrem/arduino-timer
 #include <CircularBuffer.h> //info at https://github.com/rlogiacco/CircularBuffer
 
-unsigned int RRThisSecond=0, CurrentLevel=0, RainRatePerMinute=0, temp=0, x;
+unsigned int RRThisSecond=0, CurrentLevel=0, RainRatePerMinute=0, temp=0, x, minutes = 0, hours = 0, day = 0;
 unsigned int Flood[4] = {47,49,51,53}; //Red , Orange, Yellow, Green
 unsigned int Landslide[4] = {39,41,43,45}; //Red, Orange, Yellow, Green
-int Alarm = 50, Light = 52;//Red1=3, Orange1=4, Green=5, Yellow=6, Orange=7, Red=8, strobe=9, alarm_trigger=10, alarm=11; //Pin numbers
+int Alarm = 50, Light = 52; //Pin numbers
 float k=0.2, Depth; //k = Depth formula constant
 CircularBuffer<int,60> RainRate;//declare RainRate as int with CircularBuffer
 
-auto TimerSecond = timer_create_default(); //set non-blocking timer
-auto TimerMinute = timer_create_default();
+auto TimerSecond = timer_create_default(); //set non-blocking timer per second
+auto TimerMinute = timer_create_default(); //set non-blocking timer per minute
 
 void setup() {
   Serial.begin(9600);
-  TimerSecond.every(1000,StoreMeasurement);
-  TimerMinute.every(60000,Calc_Landslide);
+  TimerSecond.every(1000,StoreMeasurement); //run function every second
+  TimerMinute.every(60000,Calc_Landslide); //run function every minute
   pinMode(Flood, OUTPUT);
   pinMode(Alarm, OUTPUT);pinMode(Light, OUTPUT); //pinMode(strobe, OUTPUT);
   pinMode(2, INPUT_PULLUP);
@@ -64,7 +64,7 @@ void Show_RainRateLevel(){ //Reflect Rain Rate
   
 }
 
-void Calc_Landslide(){
+void Calc_Landslide(){  
   //Calculate Depth
   Depth = k*RainRatePerMinute;
 
@@ -83,6 +83,16 @@ void Calc_Landslide(){
     digitalWrite(Landslide[3], LOW); digitalWrite(Landslide[2], LOW); digitalWrite(Landslide[1], LOW); digitalWrite(Landslide[0], HIGH);//Red
     digitalWrite(Light, HIGH); digitalWrite(Alarm, HIGH);
   }
+
+  minutes++;
+  if (minutes = 60){
+    minutes = 0;
+    hours++;
+    if (hours = 24){
+     day++;
+     hours = 0;
+    }
+  }
 }
 
 void loop() {
@@ -90,6 +100,8 @@ void loop() {
   TimerSecond.tick();
   TimerMinute.tick();
   Show_RainRateLevel();
+  //digitalWrite(Alarm,HIGH); //debug purposes
+  //  digitalWrite(Light,HIGH);//debug purposes
 
   
 }
